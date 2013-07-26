@@ -8,26 +8,6 @@ module.exports = FirefoxREPL;
 function FirefoxREPL() {}
 
 FirefoxREPL.prototype = {
-
-  listTabs: function() {
-    this.client.listTabs(function(err, tabs) {
-      if (err) cb(err);
-
-      var strs = [];
-      for (var i in tabs) {
-        strs.push("[" + i + "] " + tabs[i].url);
-      }
-      this.write(strs.join("\n"))
-
-      // this isn't listed in repl docs <.<
-      this.repl.displayPrompt();
-    }.bind(this));
-  },
-
-  write: function(str) {
-    this.repl.outputStream.write(str);
-  },
-
   start: function(options) {
     this.connect(options, function(err, tab) {
       if (err) throw err;
@@ -48,11 +28,8 @@ FirefoxREPL.prototype = {
     }.bind(this))
   },
 
-  defineCommands: function() {
-    this.repl.defineCommand('tabs', {
-      help: 'list currently open tabs',
-      action: this.listTabs.bind(this)
-    })
+  write: function(str) {
+    this.repl.outputStream.write(str);
   },
 
   // compliant with node REPL module eval function reqs
@@ -62,22 +39,6 @@ FirefoxREPL.prototype = {
     }
     else {
       this.evalInTab(cmd, cb);
-    }
-  },
-
-  connect: function(options, cb) {
-    var client = new FirefoxClient();
-    client.connect(options.port, options.host, function() {
-      client.selectedTab(cb);
-    })
-    this.client = client;
-  },
-
-  handleCommand: function(cmd, cb) {
-    cmd = cmd.replace(/^\(\:/, "").replace(/\s\)$/, "");
-    switch(cmd) {
-      case "quit":
-        process.exit(0);
     }
   },
 
@@ -106,4 +67,61 @@ FirefoxREPL.prototype = {
     }
     return result;
   },
+
+  defineCommands: function() {
+    this.repl.defineCommand('tabs', {
+      help: 'list currently open tabs',
+      action: this.listTabs.bind(this)
+    })
+
+    this.repl.defineCommand('quit', {
+      help: 'quit fxconsole',
+      action: function() {
+        process.exit(0);
+      }
+    })
+
+    this.repl.defineCommand('switch', {
+      help: 'switch to evaluating in another tab by index',
+      action: function(index) {
+        this.client.listTabs(function(err, tabs) {
+          if (err) throw err;
+          this.tab = tabs[index];
+
+          this.repl.displayPrompt();
+        }.bind(this));
+      }.bind(this)
+    })
+  },
+
+  listTabs: function() {
+    this.client.listTabs(function(err, tabs) {
+      if (err) cb(err);
+
+      var strs = [];
+      for (var i in tabs) {
+        strs.push("[" + i + "] " + tabs[i].url);
+      }
+      this.write(strs.join("\n"))
+
+      // this isn't listed in repl docs <.<
+      this.repl.displayPrompt();
+    }.bind(this));
+  },
+
+  connect: function(options, cb) {
+    var client = new FirefoxClient();
+    client.connect(options.port, options.host, function() {
+      client.selectedTab(cb);
+    })
+    this.client = client;
+  },
+
+  handleCommand: function(cmd, cb) {
+    cmd = cmd.replace(/^\(\:/, "").replace(/\s\)$/, "");
+    switch(cmd) {
+      case "quit":
+        process.exit(0);
+    }
+  }
 }
