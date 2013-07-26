@@ -1,0 +1,24 @@
+{
+  "name": "fxconsole",
+  "description": "Remote JavaScript console for Firefox",
+  "version": "0.0.1",
+  "author": "Heather Arthur <fayearthur@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/harthur/fxconsole.git"
+  },
+  "dependencies": {
+    "nomnom": "~1.6.1",
+    "colors": "~0.5.1",
+    "firefox-client": "~0.0.1"
+  },
+  "bin": {
+    "fxconsole": "./bin/fxconsole.js"
+  },
+  "keywords": [
+    "firefox",
+    "repl",
+    "remote debugging",
+    "FirefoxOS"
+  ]
+}
