@@ -8,31 +8,61 @@ module.exports = FirefoxREPL;
 function FirefoxREPL() {}
 
 FirefoxREPL.prototype = {
+
+  listTabs: function() {
+    this.client.listTabs(function(err, tabs) {
+      if (err) cb(err);
+
+      var strs = [];
+      for (var i in tabs) {
+        strs.push("[" + i + "] " + tabs[i].url);
+      }
+      this.write(strs.join("\n"))
+
+      // this isn't listed in repl docs <.<
+      this.repl.displayPrompt();
+    }.bind(this));
+  },
+
+  write: function(str) {
+    this.repl.outputStream.write(str);
+  },
+
   start: function(options) {
     this.connect(options, function(err, tab) {
       if (err) throw err;
 
       this.tab = tab;
 
-      repl.start({
+      this.repl = repl.start({
         prompt: "firefox> ",
         eval: this.eval.bind(this),
         input: process.stdin,
         output: process.stdout,
-        /*
         writer: function(output) {
-          return util.inspect(output);
-        } */
+          return util.inspect(output, { colors: true });
+        }
       });
+
+      this.defineCommands();
     }.bind(this))
+  },
+
+  defineCommands: function() {
+    this.repl.defineCommand('tabs', {
+      help: 'list currently open tabs',
+      action: this.listTabs.bind(this)
+    })
   },
 
   // compliant with node REPL module eval function reqs
   eval: function(cmd, context, filename, cb) {
-    if (cmd.indexOf("(:" == 0)) {
+    if (cmd.indexOf("(:") == 0) {
       this.handleCommand(cmd, cb);
     }
-    this.evalInTab(cmd, cb);
+    else {
+      this.evalInTab(cmd, cb);
+    }
   },
 
   connect: function(options, cb) {
@@ -40,6 +70,7 @@ FirefoxREPL.prototype = {
     client.connect(options.port, options.host, function() {
       client.selectedTab(cb);
     })
+    this.client = client;
   },
 
   handleCommand: function(cmd, cb) {
@@ -58,6 +89,7 @@ FirefoxREPL.prototype = {
         cb(resp.exceptionMessage);
         return;
       }
+
       var result = this.transformResult(resp.result);
       cb(null, result);
     }.bind(this))
