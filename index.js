@@ -28,8 +28,22 @@ FirefoxREPL.prototype = {
     }.bind(this))
   },
 
+  connect: function(options, cb) {
+    var client = new FirefoxClient();
+    client.connect(options.port, options.host, function() {
+      client.selectedTab(cb);
+    })
+    client.on("end", this.quit);
+
+    this.client = client;
+  },
+
   write: function(str) {
     this.repl.outputStream.write(str);
+  },
+
+  quit: function() {
+    process.exit(0);
   },
 
   // compliant with node REPL module eval function reqs
@@ -107,14 +121,6 @@ FirefoxREPL.prototype = {
       // this isn't listed in repl docs <.<
       this.repl.displayPrompt();
     }.bind(this));
-  },
-
-  connect: function(options, cb) {
-    var client = new FirefoxClient();
-    client.connect(options.port, options.host, function() {
-      client.selectedTab(cb);
-    })
-    this.client = client;
   },
 
   handleCommand: function(cmd, cb) {
