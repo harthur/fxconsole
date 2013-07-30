@@ -38,13 +38,19 @@ FirefoxREPL.prototype = {
     var props = output.safeGetterValues;
     var names = Object.keys(props).slice(0, PROP_SHOW_COUNT);
 
+    var remaining = PROP_SHOW_COUNT - names.length;
+    if (remaining) {
+      var ownProps = output.ownProperties.slice(0, remaining);
+      names = names.concat(ownProps);
+    }
+
     for (i in names) {
       var name = names[i];
 
       var value = props[name].value;
       value = this.transformResult(value);
       if (value.type == "object") {
-        value = "[object " + value.class + "]";
+        value = ("[object " + value.class + "]").cyan;
       }
       else {
         value = util.inspect(props[name].value, { colors: true });
