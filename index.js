@@ -3,6 +3,8 @@ var util = require("util"),
     colors = require("colors"),
     FirefoxClient = require("firefox-client");
 
+const PROP_SHOW_COUNT = 5;
+
 module.exports = FirefoxREPL;
 
 function FirefoxREPL() {}
@@ -19,13 +21,39 @@ FirefoxREPL.prototype = {
         eval: this.eval.bind(this),
         input: process.stdin,
         output: process.stdout,
-        writer: function(output) {
-          return util.inspect(output, { colors: true });
-        }
+        writer: this.writer.bind(this)
       });
 
       this.defineCommands();
     }.bind(this))
+  },
+
+  writer: function(output) {
+    if (output.type != "object") {
+      return util.inspect(output, { colors: true });
+    }
+    var str = "";
+    str += output.class.yellow + " { ";
+
+    var props = output.safeGetterValues;
+    var names = Object.keys(props).slice(0, PROP_SHOW_COUNT);
+
+    for (i in names) {
+      var name = names[i];
+
+      var value = props[name].value;
+      value = this.transformResult(value);
+      if (value.type == "object") {
+        value = "[object " + value.class + "]";
+      }
+      else {
+        value = util.inspect(props[name].value, { colors: true });
+      }
+      str += name.magenta + ": " + value + ", ";
+    }
+    str += "... }";
+
+    return str;
   },
 
   connect: function(options, cb) {
@@ -40,7 +68,6 @@ FirefoxREPL.prototype = {
 
   write: function(str, cb) {
     this.repl.outputStream.write(str, cb);
-    console.log("");
   },
 
   quit: function() {
@@ -49,12 +76,7 @@ FirefoxREPL.prototype = {
 
   // compliant with node REPL module eval function reqs
   eval: function(cmd, context, filename, cb) {
-    if (cmd.indexOf("(:") == 0) {
-      this.handleCommand(cmd, cb);
-    }
-    else {
-      this.evalInTab(cmd, cb);
-    }
+    this.evalInTab(cmd, cb);
   },
 
   evalInTab: function(input, cb) {
@@ -67,7 +89,18 @@ FirefoxREPL.prototype = {
       }
 
       var result = this.transformResult(resp.result);
-      cb(null, result);
+
+      if (result.type == "object") {
+        result.ownPropertiesAndPrototype(function(err, resp) {
+          if (err) throw err;
+          result.safeGetterValues = resp.safeGetterValues;
+
+          cb(null, result);
+        })
+      }
+      else {
+        cb(null, result);
+      }
     }.bind(this))
   },
 
@@ -77,8 +110,6 @@ FirefoxREPL.prototype = {
         return undefined;
       case "null":
         return null;
-      case "object":
-        return "object " + result.class;
     }
     return result;
   },
@@ -98,38 +129,34 @@ FirefoxREPL.prototype = {
 
     this.repl.defineCommand('switch', {
       help: 'switch to evaluating in another tab by index',
-      action: function(index) {
-        this.client.listTabs(function(err, tabs) {
-          if (err) throw err;
-          this.tab = tabs[index];
-
-          this.repl.displayPrompt();
-        }.bind(this));
-      }.bind(this)
+      action: this.switchTab.bind(this)
     })
+  },
+
+  switchTab: function(index) {
+    this.client.listTabs(function(err, tabs) {
+      if (err) throw err;
+      this.tab = tabs[index];
+
+      this.write((this.tab.url + "\n").yellow);
+
+      this.repl.displayPrompt();
+    }.bind(this));
   },
 
   listTabs: function() {
     this.client.listTabs(function(err, tabs) {
       if (err) throw err;
 
-      var strs = [];
+      var strs = "";
       for (var i in tabs) {
-        strs.push("[" + i + "] " + tabs[i].url);
+        strs += "[" + i + "] " + tabs[i].url + "\n";
       }
 
-      this.write(strs.join("\n"))
+      this.write(strs);
 
       // this isn't listed in repl docs <.<
       this.repl.displayPrompt();
     }.bind(this));
-  },
-
-  handleCommand: function(cmd, cb) {
-    cmd = cmd.replace(/^\(\:/, "").replace(/\s\)$/, "");
-    switch(cmd) {
-      case "quit":
-        process.exit(0);
-    }
   }
 }
