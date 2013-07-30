@@ -38,8 +38,9 @@ FirefoxREPL.prototype = {
     this.client = client;
   },
 
-  write: function(str) {
-    this.repl.outputStream.write(str);
+  write: function(str, cb) {
+    this.repl.outputStream.write(str, cb);
+    console.log("");
   },
 
   quit: function() {
@@ -110,12 +111,13 @@ FirefoxREPL.prototype = {
 
   listTabs: function() {
     this.client.listTabs(function(err, tabs) {
-      if (err) cb(err);
+      if (err) throw err;
 
       var strs = [];
       for (var i in tabs) {
         strs.push("[" + i + "] " + tabs[i].url);
       }
+
       this.write(strs.join("\n"))
 
       // this isn't listed in repl docs <.<
