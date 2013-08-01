@@ -35,7 +35,9 @@ FirefoxREPL.prototype = {
     var str = "";
     str += output.class.yellow + " { ";
 
-    var props = output.safeGetterValues;
+    var props = {};
+
+    output.safeGetterValues;
     var names = Object.keys(props).slice(0, PROP_SHOW_COUNT);
 
     var remaining = PROP_SHOW_COUNT - names.length;
@@ -126,6 +128,11 @@ FirefoxREPL.prototype = {
       action: this.listTabs.bind(this)
     })
 
+    this.repl.defineCommand('apps', {
+      help: 'list currently open apps',
+      action: this.listApps.bind(this)
+    })
+
     this.repl.defineCommand('quit', {
       help: 'quit fxconsole',
       action: function() {
@@ -150,19 +157,31 @@ FirefoxREPL.prototype = {
     }.bind(this));
   },
 
+  writeTabs: function(tabs) {
+    var strs = "";
+    for (var i in tabs) {
+      strs += "[" + i + "] " + tabs[i].url + "\n";
+    }
+
+    this.write(strs);
+
+    // this isn't listed in repl docs <.<
+    this.repl.displayPrompt();
+  },
+
   listTabs: function() {
     this.client.listTabs(function(err, tabs) {
       if (err) throw err;
 
-      var strs = "";
-      for (var i in tabs) {
-        strs += "[" + i + "] " + tabs[i].url + "\n";
-      }
-
-      this.write(strs);
-
-      // this isn't listed in repl docs <.<
-      this.repl.displayPrompt();
+      this.writeTabs(tabs);
     }.bind(this));
+  },
+
+  listApps: function() {
+    this.client.listApps(function(err, apps) {
+      if (err) throw err;
+
+      this.writeTabs(apps);
+    }.bind(this))
   }
 }
