@@ -21,7 +21,15 @@ You can now use `fxconsole` from the command line.
  2. Start a server by entering this command: `listen 6000` (where `6000` is the port number)
 
 ### Firefox for Android
-Follow the instructions in [this Hacks video](https://www.youtube.com/watch?v=Znj_8IFeTVs)
+Follow the instructions in this short [Hacks video](https://www.youtube.com/watch?v=Znj_8IFeTVs)
+
+### FirefoxOS Simulator
+This one is a bit hacky right now.
+
+1. Install [FirefoxOS Simulator](https://addons.mozilla.org/en-us/firefox/addon/firefox-os-simulator/) in Firefox
+2. Start the Simulator with **Tools** > **Web Developer** > **Firefox OS Simulator**
+3. Get the port the Simulator is listening on with this terminal command: `lsof -i -P | grep -i "b2g"`
+4. Start `fxconsole` and give it a `--port` argument.
 
 ## Usage
 
