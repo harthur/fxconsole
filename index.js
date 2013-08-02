@@ -29,26 +29,35 @@ FirefoxREPL.prototype = {
   },
 
   writer: function(output) {
-    if (output.type != "object") {
+    if (!output || output.type != "object") {
+      // let inspect do its thing if it's a literal
       return util.inspect(output, { colors: true });
     }
+    // do our own object summary
     var str = "";
     str += output.class.yellow + " { ";
 
     var props = {};
 
-    output.safeGetterValues;
-    var names = Object.keys(props).slice(0, PROP_SHOW_COUNT);
+    // show first N properties of an object, starting with getters
+    var getters = output.safeGetterValues;
+    var names = Object.keys(getters).slice(0, PROP_SHOW_COUNT);
+    names.map(function(name) {
+      props[name] = getters[name];
+    })
 
+    // then the own properties
+    var ownProps = output.ownProps;
     var remaining = PROP_SHOW_COUNT - names.length;
     if (remaining) {
-      var ownProps = output.ownProperties.slice(0, remaining);
-      names = names.concat(ownProps);
+      names = Object.keys(ownProps).slice(0, remaining);
+      names.map(function(name) {
+        props[name] = ownProps[name];
+      });
     }
 
-    for (i in names) {
-      var name = names[i];
-
+    var strs = [];
+    for (name in props) {
       var value = props[name].value;
       value = this.transformResult(value);
       if (value.type == "object") {
@@ -57,9 +66,16 @@ FirefoxREPL.prototype = {
       else {
         value = util.inspect(props[name].value, { colors: true });
       }
-      str += name.magenta + ": " + value + ", ";
+      strs.push(name.magenta + ": " + value);
     }
-    str += "... }";
+    str += strs.join(", ");
+
+    var total = Object.keys(getters).length + Object.keys(ownProps).length;
+    var more = total - PROP_SHOW_COUNT;
+    if (more > 0) {
+      str += ", ..." + (more + " more").grey
+    } 
+    str += " } ";
 
     return str;
   },
@@ -96,18 +112,19 @@ FirefoxREPL.prototype = {
         return;
       }
 
-      var result = this.transformResult(resp.result);
+      var result = resp.result;
 
       if (result.type == "object") {
         result.ownPropertiesAndPrototype(function(err, resp) {
           if (err) throw err;
           result.safeGetterValues = resp.safeGetterValues;
+          result.ownProps = resp.ownProperties;
 
           cb(null, result);
         })
       }
       else {
-        cb(null, result);
+        cb(null, this.transformResult(resp.result));
       }
     }.bind(this))
   },
