@@ -161,9 +161,15 @@ FirefoxREPL.prototype = {
   switchTab: function(index) {
     this.client.listTabs(function(err, tabs) {
       if (err) throw err;
-      this.tab = tabs[index];
+      var tab = tabs[index];
 
-      this.write((this.tab.url + "\n").yellow);
+      if (!tab) {
+        this.write("no tab at index " + index + "\n");
+      }
+      else {
+        this.tab = tab;
+        this.write((this.tab.url + "\n").yellow);
+      }
 
       this.repl.displayPrompt();
     }.bind(this));
