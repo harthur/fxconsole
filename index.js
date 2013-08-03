@@ -60,7 +60,7 @@ FirefoxREPL.prototype = {
     for (name in props) {
       var value = props[name].value;
       value = this.transformResult(value);
-      if (value.type == "object") {
+      if (value && value.type == "object") {
         value = ("[object " + value.class + "]").cyan;
       }
       else {
@@ -145,11 +145,6 @@ FirefoxREPL.prototype = {
       action: this.listTabs.bind(this)
     })
 
-    this.repl.defineCommand('apps', {
-      help: 'list currently open apps',
-      action: this.listApps.bind(this)
-    })
-
     this.repl.defineCommand('quit', {
       help: 'quit fxconsole',
       action: function() {
@@ -192,13 +187,5 @@ FirefoxREPL.prototype = {
 
       this.writeTabs(tabs);
     }.bind(this));
-  },
-
-  listApps: function() {
-    this.client.listApps(function(err, apps) {
-      if (err) throw err;
-
-      this.writeTabs(apps);
-    }.bind(this))
   }
 }
