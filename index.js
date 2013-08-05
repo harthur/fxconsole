@@ -116,7 +116,8 @@ FirefoxREPL.prototype = {
 
       if (result.type == "object") {
         result.ownPropertiesAndPrototype(function(err, resp) {
-          if (err) throw err;
+          if (err) return cb(err);
+
           result.safeGetterValues = resp.safeGetterValues;
           result.ownProps = resp.ownProperties;
 
