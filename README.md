@@ -24,7 +24,7 @@ You can now use `fxconsole` from the command line.
 Follow the instructions in this short [Hacks video](https://www.youtube.com/watch?v=Znj_8IFeTVs)
 
 ### FirefoxOS Simulator
-This one is a bit hacky right now, and object inspection doesn't work yet, but feel free to try. the `.tabs` command lists the currently open apps in the simulator.
+This one is a bit hacky right now, and object inspection doesn't work yet, but feel free to try. The `.tabs` command lists the currently open apps in the simulator.
 
 1. Install [FirefoxOS Simulator](https://addons.mozilla.org/en-us/firefox/addon/firefox-os-simulator/) in Firefox
 2. Start the Simulator with **Tools** > **Web Developer** > **Firefox OS Simulator**
