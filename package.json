@@ -13,7 +13,7 @@
     "firefox-client": "~0.0.1"
   },
   "bin": {
-    "fxconsole": "./bin/fxconsole.js"
+    "fxconsole": "./bin/repl.js"
   },
   "keywords": [
     "firefox",
