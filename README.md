@@ -24,18 +24,22 @@ You can now use `fxconsole` from the command line.
 Follow the instructions in this short [Hacks video](https://www.youtube.com/watch?v=Znj_8IFeTVs)
 
 ### FirefoxOS Simulator
-This one is a bit hacky right now.
+This one is a bit hacky right now, and object inspection doesn't work yet, but feel free to try. the `.tabs` command lists the currently open apps in the simulator.
 
 1. Install [FirefoxOS Simulator](https://addons.mozilla.org/en-us/firefox/addon/firefox-os-simulator/) in Firefox
 2. Start the Simulator with **Tools** > **Web Developer** > **Firefox OS Simulator**
-3. Get the port the Simulator is listening on with this terminal command: `lsof -i -P | grep -i "b2g"`
-4. Start `fxconsole` and give it a `--port` argument.
+3. Get the port the Simulator is listening on with this terminal command: `lsof -i -P | grep -i "b2g"` in Linux/Mac.
+4. Start `fxconsole` and with the `--port` argument.
 
 ## Usage
 
 ```
 fxconsole --port 6000 --host 10.251.34.157
 ```
+
+## Commands
+
+There are two extra REPL commands available beyond the standard node.js commands. `.tabs` lists the open tabs in Firefox. `.switch 2` switches to evaluating in a tab. The argument is the index of the tab to switch to.
 
 ## What it looks like
 
