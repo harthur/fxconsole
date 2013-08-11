@@ -43,3 +43,4 @@ There are two extra REPL commands available beyond the standard node.js commands
 
 ## What it looks like
 
+![fxconsole in Terminal](http://i.imgur.com/fGadT0Y.png)
