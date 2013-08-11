@@ -1,8 +1,8 @@
 # fxconsole
 `fxconsole` is a remote Javascript console for Firefox that runs in your terminal.
 
-# Install
-With [node.js](http://nodejs.org/) and [npm](http://github.com/isaacs/npm):
+## Install
+With [node.js](http://nodejs.org/) and the npm package manager:
 
 	npm install fxconsole -g
 
