@@ -1,4 +1,6 @@
 var util = require("util"),
+    url = require("url"),
+    path = require("path"),
     repl = require("repl"),
     colors = require("colors"),
     FirefoxClient = require("firefox-client");
@@ -14,10 +16,12 @@ FirefoxREPL.prototype = {
     this.connect(options, function(err, tab) {
       if (err) throw err;
 
-      this.tab = tab;
+      console.log(tab.url.yellow);
+
+      this.setTab(tab)
 
       this.repl = repl.start({
-        prompt: "firefox> ",
+        prompt: this.getPrompt(),
         eval: this.eval.bind(this),
         input: process.stdin,
         output: process.stdout,
@@ -26,6 +30,16 @@ FirefoxREPL.prototype = {
 
       this.defineCommands();
     }.bind(this))
+  },
+
+  connect: function(options, cb) {
+    var client = new FirefoxClient();
+    client.connect(options.port, options.host, function() {
+      client.selectedTab(cb);
+    })
+    client.on("end", this.quit);
+
+    this.client = client;
   },
 
   writer: function(output) {
@@ -56,10 +70,12 @@ FirefoxREPL.prototype = {
       });
     }
 
+    // write out a few properties and their values
     var strs = [];
     for (name in props) {
       var value = props[name].value;
       value = this.transformResult(value);
+
       if (value && value.type == "object") {
         value = ("[object " + value.class + "]").cyan;
       }
@@ -70,6 +86,7 @@ FirefoxREPL.prototype = {
     }
     str += strs.join(", ");
 
+    // write the number of remaining properties
     var total = Object.keys(getters).length + Object.keys(ownProps).length;
     var more = total - PROP_SHOW_COUNT;
     if (more > 0) {
@@ -80,22 +97,27 @@ FirefoxREPL.prototype = {
     return str;
   },
 
-  connect: function(options, cb) {
-    var client = new FirefoxClient();
-    client.connect(options.port, options.host, function() {
-      client.selectedTab(cb);
-    })
-    client.on("end", this.quit);
-
-    this.client = client;
-  },
-
   write: function(str, cb) {
     this.repl.outputStream.write(str, cb);
   },
 
-  quit: function() {
-    process.exit(0);
+  setTab: function(tab) {
+    this.tab = tab;
+
+    if (this.repl) {
+      // repl.prompt not documented in REPL module
+      this.repl.prompt = this.getPrompt();
+    }
+  },
+
+  getPrompt: function() {
+    var parts = url.parse(this.tab.url);
+
+    var name = parts.hostname;
+    if (!name) {
+      name = path.basename(parts.path);
+    }
+    return name + "> ";
   },
 
   // compliant with node REPL module eval function reqs
@@ -148,9 +170,7 @@ FirefoxREPL.prototype = {
 
     this.repl.defineCommand('quit', {
       help: 'quit fxconsole',
-      action: function() {
-        process.exit(0);
-      }
+      action: this.quit
     })
 
     this.repl.defineCommand('switch', {
@@ -168,7 +188,7 @@ FirefoxREPL.prototype = {
         this.write("no tab at index " + index + "\n");
       }
       else {
-        this.tab = tab;
+        this.setTab(tab);
         this.write((this.tab.url + "\n").yellow);
       }
 
@@ -176,23 +196,23 @@ FirefoxREPL.prototype = {
     }.bind(this));
   },
 
-  writeTabs: function(tabs) {
-    var strs = "";
-    for (var i in tabs) {
-      strs += "[" + i + "] " + tabs[i].url + "\n";
-    }
-
-    this.write(strs);
-
-    // this isn't listed in repl docs <.<
-    this.repl.displayPrompt();
-  },
-
   listTabs: function() {
     this.client.listTabs(function(err, tabs) {
       if (err) throw err;
 
-      this.writeTabs(tabs);
+      var strs = "";
+      for (var i in tabs) {
+        strs += "[" + i + "] " + tabs[i].url + "\n";
+      }
+
+      this.write(strs);
+
+      // displayPrompt() not listed in REPL module docs <.<
+      this.repl.displayPrompt();
     }.bind(this));
+  },
+
+  quit: function() {
+    process.exit(0);
   }
 }
