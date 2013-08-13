@@ -37,6 +37,13 @@ FirefoxREPL.prototype = {
     client.connect(options.port, options.host, function() {
       client.selectedTab(cb);
     })
+    client.on("error", function(error) {
+      if (error.code == "ECONNREFUSED") {
+          throw new Error(error.code
+          + ": Firefox isn't listening for connections");
+      }
+      throw error;
+    })
     client.on("end", this.quit);
 
     this.client = client;
@@ -91,7 +98,7 @@ FirefoxREPL.prototype = {
     var more = total - PROP_SHOW_COUNT;
     if (more > 0) {
       str += ", ..." + (more + " more").grey
-    } 
+    }
     str += " } ";
 
     return str;

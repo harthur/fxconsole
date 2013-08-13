@@ -10,7 +10,7 @@
   "dependencies": {
     "nomnom": "~1.6.1",
     "colors": "~0.5.1",
-    "firefox-client": "~0.0.1"
+    "firefox-client": "~0.0.3"
   },
   "bin": {
     "fxconsole": "./bin/repl.js"
