@@ -1,5 +1,7 @@
 # fxconsole
-`fxconsole` is a remote Javascript console for Firefox that runs in your terminal.
+`fxconsole` is a remote Javascript console for Firefox that runs in your terminal:
+
+![fxconsole in Terminal](http://i.imgur.com/iKXwCsD.png)
 
 ## Install
 With [node.js](http://nodejs.org/) and the npm package manager:
@@ -40,7 +42,3 @@ fxconsole --port 6000 --host 10.251.34.157
 ## Commands
 
 There are two extra REPL commands available beyond the standard node.js commands. `.tabs` lists the open tabs in Firefox. `.switch 2` switches to evaluating in a tab. The argument is the index of the tab to switch to.
-
-## What it looks like
-
-![fxconsole in Terminal](http://i.imgur.com/fGadT0Y.png)
