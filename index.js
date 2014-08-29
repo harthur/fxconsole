@@ -48,7 +48,13 @@ FirefoxREPL.prototype = {
         else {
           client.getWebapps(function(err, webapps) {
             webapps.listRunningApps(function(err, apps) {
-              webapps.getApp(apps[0], cb);
+
+              if (apps.length) {
+                webapps.getApp(apps[0], cb);
+              } else {
+                throw new Error ("No tabs or apps open");
+              }
+
             });
           });
         }
