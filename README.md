@@ -30,7 +30,7 @@ This one is a bit hacky right now, and object inspection doesn't work yet, but f
 
 1. Install [FirefoxOS Simulator](https://addons.mozilla.org/en-us/firefox/addon/firefox-os-simulator/) in Firefox
 2. Start the Simulator with **Tools** > **Web Developer** > **Firefox OS Simulator**
-3. Get the port the Simulator is listening on with this terminal command: `lsof -i -P | grep -i "b2g"` in Linux/Mac.
+3. Get the port the Simulator is listening on with this terminal command: `lsof -i -P | grep -i "b2g"` in Linux/Mac, or using [fx-ports](https://github.com/nicola/fx-ports).
 4. Start `fxconsole` and with the `--port` argument.
 
 ## Usage
