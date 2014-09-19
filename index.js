@@ -31,7 +31,6 @@ FirefoxREPL.prototype = {
     }.bind(this));
   },
 
-
   connect: function(options, cb) {
     var client = new FirefoxClient();
     client.connect(options.port, options.host, function() {
@@ -54,8 +53,8 @@ FirefoxREPL.prototype = {
           });
         }
       });
-
     });
+
     client.on("error", function(error) {
       if (error.code == "ECONNREFUSED") {
           throw new Error(error.code
@@ -135,7 +134,6 @@ FirefoxREPL.prototype = {
       this.repl.prompt = this.getPrompt();
     }
   },
-
 
   getPrompt: function() {
     var parts = url.parse(this.page.url);
