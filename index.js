@@ -13,11 +13,11 @@ function FirefoxREPL() {}
 
 FirefoxREPL.prototype = {
   start: function(options) {
-    this.connect(options, function(err, actor) {
+    this.connect(options, function(err, page) {
       if (err) throw err;
 
-      console.log(actor.url.yellow);
-      this.setActor(actor);
+      console.log(page.url.yellow);
+      this.setActor(page);
 
       this.repl = repl.start({
         prompt: this.getPrompt(),
@@ -33,13 +33,10 @@ FirefoxREPL.prototype = {
 
 
   connect: function(options, cb) {
-
     var client = new FirefoxClient();
     client.connect(options.port, options.host, function() {
-
     // see https://github.com/harthur/firefox-client/issues/11
       client.listTabs(function(err, tabs) {
-
         // If some tabs are open
         if (tabs.length) {
           client.selectedTab(cb);
@@ -48,13 +45,11 @@ FirefoxREPL.prototype = {
         else {
           client.getWebapps(function(err, webapps) {
             webapps.listRunningApps(function(err, apps) {
-
               if (apps.length) {
                 webapps.getApp(apps[0], cb);
               } else {
                 throw new Error ("No tabs or apps open");
               }
-
             });
           });
         }
@@ -132,8 +127,8 @@ FirefoxREPL.prototype = {
     this.repl.outputStream.write(str, cb);
   },
 
-  setActor: function(actor) {
-    this.actor = actor;
+  setActor: function(page) {
+    this.page = page;
 
     if (this.repl) {
       // repl.prompt not documented in REPL module
@@ -143,7 +138,7 @@ FirefoxREPL.prototype = {
 
 
   getPrompt: function() {
-    var parts = url.parse(this.actor.url);
+    var parts = url.parse(this.page.url);
     var name = parts.hostname;
     if (!name) {
     name = path.basename(parts.path);
@@ -157,7 +152,7 @@ FirefoxREPL.prototype = {
   },
 
   evalInActor: function(input, cb) {
-    this.actor.Console.evaluateJS(input, function(err, resp) {
+    this.page.Console.evaluateJS(input, function(err, resp) {
       if (err) throw err;
 
       if (resp.exception) {
@@ -223,23 +218,21 @@ FirefoxREPL.prototype = {
   switchTab: function(index) {
     this.client.listTabs(function(err, tabs) {
       if (err) throw err;
-      var tab = tabs[index];
 
+      var tab = tabs[index];
       if (!tab) {
         this.write("no tab at index " + index + "\n");
       }
       else {
         this.setActor(tab);
-        this.write((this.actor.url + "\n").yellow);
+        this.write((this.page.url + "\n").yellow);
       }
-
       this.repl.displayPrompt();
     }.bind(this));
   },
 
   switchApp: function(index) {
     this.client.getWebapps(function(err, webapps) {
-
       webapps.listRunningApps(function(err, apps) {
         if (err) throw err;
 
@@ -247,16 +240,13 @@ FirefoxREPL.prototype = {
         if (!app) {
           this.write("no app at index " + index + "\n");
           this.repl.displayPrompt();
-
         } else {
-          webapps.getApp(app, function(err, actor) {
-            this.setActor(actor);
-            this.write((this.actor.url + "\n").yellow);
+          webapps.getApp(app, function(err, page) {
+            this.setActor(page);
+            this.write((this.page.url + "\n").yellow);
             this.repl.displayPrompt();
           }.bind(this));
-
         }
-
       }.bind(this));
     }.bind(this));
   },
