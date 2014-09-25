@@ -13,12 +13,11 @@ function FirefoxREPL() {}
 
 FirefoxREPL.prototype = {
   start: function(options) {
-    this.connect(options, function(err, tab) {
+    this.connect(options, function(err, page) {
       if (err) throw err;
 
-      console.log(tab.url.yellow);
-
-      this.setTab(tab)
+      console.log(page.url.yellow);
+      this.setActor(page);
 
       this.repl = repl.start({
         prompt: this.getPrompt(),
@@ -29,21 +28,40 @@ FirefoxREPL.prototype = {
       });
 
       this.defineCommands();
-    }.bind(this))
+    }.bind(this));
   },
 
   connect: function(options, cb) {
     var client = new FirefoxClient();
     client.connect(options.port, options.host, function() {
-      client.selectedTab(cb);
-    })
+    // see https://github.com/harthur/firefox-client/issues/11
+      client.listTabs(function(err, tabs) {
+        // If some tabs are open
+        if (tabs.length) {
+          client.selectedTab(cb);
+        }
+        // Otherwise apps
+        else {
+          client.getWebapps(function(err, webapps) {
+            webapps.listRunningApps(function(err, apps) {
+              if (apps.length) {
+                webapps.getApp(apps[0], cb);
+              } else {
+                throw new Error ("No tabs or apps open");
+              }
+            });
+          });
+        }
+      });
+    });
+
     client.on("error", function(error) {
       if (error.code == "ECONNREFUSED") {
           throw new Error(error.code
           + ": Firefox isn't listening for connections");
       }
       throw error;
-    })
+    });
     client.on("end", this.quit);
 
     this.client = client;
@@ -65,7 +83,7 @@ FirefoxREPL.prototype = {
     var names = Object.keys(getters).slice(0, PROP_SHOW_COUNT);
     names.map(function(name) {
       props[name] = getters[name];
-    })
+    });
 
     // then the own properties
     var ownProps = output.ownProps;
@@ -79,7 +97,7 @@ FirefoxREPL.prototype = {
 
     // write out a few properties and their values
     var strs = [];
-    for (name in props) {
+    for (var name in props) {
       var value = props[name].value;
       value = this.transformResult(value);
 
@@ -97,7 +115,7 @@ FirefoxREPL.prototype = {
     var total = Object.keys(getters).length + Object.keys(ownProps).length;
     var more = total - PROP_SHOW_COUNT;
     if (more > 0) {
-      str += ", ..." + (more + " more").grey
+      str += ", ..." + (more + " more").grey;
     }
     str += " } ";
 
@@ -108,8 +126,8 @@ FirefoxREPL.prototype = {
     this.repl.outputStream.write(str, cb);
   },
 
-  setTab: function(tab) {
-    this.tab = tab;
+  setActor: function(page) {
+    this.page = page;
 
     if (this.repl) {
       // repl.prompt not documented in REPL module
@@ -118,22 +136,21 @@ FirefoxREPL.prototype = {
   },
 
   getPrompt: function() {
-    var parts = url.parse(this.tab.url);
-
+    var parts = url.parse(this.page.url);
     var name = parts.hostname;
     if (!name) {
-      name = path.basename(parts.path);
+    name = path.basename(parts.path);
     }
     return name + "> ";
   },
 
   // compliant with node REPL module eval function reqs
   eval: function(cmd, context, filename, cb) {
-    this.evalInTab(cmd, cb);
+    this.evalInActor(cmd, cb);
   },
 
-  evalInTab: function(input, cb) {
-    this.tab.Console.evaluateJS(input, function(err, resp) {
+  evalInActor: function(input, cb) {
+    this.page.Console.evaluateJS(input, function(err, resp) {
       if (err) throw err;
 
       if (resp.exception) {
@@ -151,12 +168,12 @@ FirefoxREPL.prototype = {
           result.ownProps = resp.ownProperties;
 
           cb(null, result);
-        })
+        });
       }
       else {
         cb(null, this.transformResult(resp.result));
       }
-    }.bind(this))
+    }.bind(this));
   },
 
   transformResult: function(result) {
@@ -173,33 +190,62 @@ FirefoxREPL.prototype = {
     this.repl.defineCommand('tabs', {
       help: 'list currently open tabs',
       action: this.listTabs.bind(this)
-    })
+    });
+
+    this.repl.defineCommand('apps', {
+      help: 'list currently open apps',
+      action: this.listApps.bind(this)
+    });
 
     this.repl.defineCommand('quit', {
       help: 'quit fxconsole',
       action: this.quit
-    })
+    });
 
     this.repl.defineCommand('switch', {
       help: 'switch to evaluating in another tab by index',
       action: this.switchTab.bind(this)
-    })
+    });
+
+    this.repl.defineCommand('switchapp', {
+      help: 'switch to evaluating in another tab by index',
+      action: this.switchApp.bind(this)
+    });
   },
 
   switchTab: function(index) {
     this.client.listTabs(function(err, tabs) {
       if (err) throw err;
-      var tab = tabs[index];
 
+      var tab = tabs[index];
       if (!tab) {
         this.write("no tab at index " + index + "\n");
       }
       else {
-        this.setTab(tab);
-        this.write((this.tab.url + "\n").yellow);
+        this.setActor(tab);
+        this.write((this.page.url + "\n").yellow);
       }
-
       this.repl.displayPrompt();
+    }.bind(this));
+  },
+
+  switchApp: function(index) {
+    this.client.getWebapps(function(err, webapps) {
+      webapps.listRunningApps(function(err, apps) {
+        if (err) throw err;
+
+        var app = apps[index];
+        if (!app) {
+          this.write("no app at index " + index + "\n");
+          this.repl.displayPrompt();
+        } else {
+          webapps.getApp(app, function(err, page) {
+            this.setActor(page);
+            this.write((this.page.url + "\n").yellow);
+            this.repl.displayPrompt();
+          }.bind(this));
+        }
+      }.bind(this));
     }.bind(this));
   },
 
@@ -219,7 +265,25 @@ FirefoxREPL.prototype = {
     }.bind(this));
   },
 
+  listApps: function() {
+    this.client.getWebapps(function(err, webapps) {
+      webapps.listRunningApps(function(err, apps) {
+        if (err) throw err;
+
+        var strs = "";
+        for (var i in apps) {
+          strs += "[" + i + "] " + apps[i] + "\n";
+        }
+
+        this.write(strs);
+
+        // displayPrompt() not listed in REPL module docs <.<
+        this.repl.displayPrompt();
+      }.bind(this));
+    }.bind(this));
+  },
+
   quit: function() {
     process.exit(0);
   }
-}
+};
